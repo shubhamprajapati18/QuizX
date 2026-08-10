@@ -42,7 +42,7 @@ export const Footer = () => {
 
       <div className="max-w-7xl mx-auto pt-6 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500">
         <p>© {new Date().getFullYear()} QuizX Assessment Platform. All rights reserved.</p>
-        <p className="mt-2 sm:mt-0 font-mono text-[10px]">Strict Monochrome Edition</p>
+        <p className="mt-2 sm:mt-0 font-mono text-[10px]">Developed by <a href="https://shubhamprajapati18.netlify.app/">Shubham Prajapati</a></p>
       </div>
     </footer>
   );
