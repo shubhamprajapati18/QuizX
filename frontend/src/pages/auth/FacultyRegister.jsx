@@ -66,7 +66,7 @@ export const FacultyRegister = () => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-zinc-50 flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <a href="/" className="inline-flex items-center">

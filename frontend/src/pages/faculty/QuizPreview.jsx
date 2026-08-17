@@ -113,7 +113,7 @@ export const QuizPreview = () => {
               <span className="text-zinc-900 font-bold">{currentQ.marks} Marks</span>
             </div>
 
-            <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed">
+            <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed whitespace-pre-wrap font-sans">
               {currentQ.question_text}
             </h3>
 
@@ -126,17 +126,17 @@ export const QuizPreview = () => {
                   <div
                     key={opt.id || idx}
                     onClick={() => setSelectedAnswers({ ...selectedAnswers, [currentQ.id]: opt.id })}
-                    className={`p-4 rounded-lg border text-xs sm:text-sm font-medium transition-all cursor-pointer flex items-center justify-between ${
+                    className={`p-4 rounded-lg border text-xs sm:text-sm font-medium transition-all cursor-pointer flex items-start sm:items-center justify-between ${
                       isSelected ? 'border-zinc-900 bg-zinc-100 text-zinc-900 font-bold shadow-xs' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded text-xs font-mono font-bold flex items-center justify-center ${
+                    <div className="flex items-start sm:items-center gap-3">
+                      <span className={`w-6 h-6 rounded text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 ${
                         isSelected ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
                       }`}>
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      <span>{opt.text}</span>
+                      <span className="whitespace-pre-wrap font-mono">{opt.text}</span>
                     </div>
 
                     {isCorrectKey && (

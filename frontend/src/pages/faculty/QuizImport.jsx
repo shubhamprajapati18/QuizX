@@ -5,19 +5,29 @@ import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
 import { QuizBuilder } from './QuizBuilder';
 import { api } from '../../services/api';
-import { Upload, FileText, ArrowRight } from 'lucide-react';
+import { Upload, FileText, ArrowRight, RefreshCw } from 'lucide-react';
 
 export const QuizImport = () => {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const [extractedQuestions, setExtractedQuestions] = useState(null);
+  const [importMeta, setImportMeta] = useState(null);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError('');
     }
+  };
+
+  const handleResetImport = () => {
+    setFile(null);
+    setExtractedQuestions(null);
+    setImportMeta(null);
+    setError('');
+    // Clear stale generic draft from localStorage to prevent cross-contamination
+    localStorage.removeItem('quiz_builder_draft_new');
   };
 
   const handleUpload = async () => {
@@ -29,6 +39,9 @@ export const QuizImport = () => {
     setIsUploading(true);
     setError('');
 
+    // Purge any stale generic draft before mounting new import session
+    localStorage.removeItem('quiz_builder_draft_new');
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -36,6 +49,11 @@ export const QuizImport = () => {
       const res = await api.import.uploadDocument(formData);
       if (res.success && res.questions) {
         setExtractedQuestions(res.questions);
+        setImportMeta({
+          importSessionId: res.importSessionId || `doc_imp_${Date.now()}`,
+          docHash: res.docHash || '',
+          filename: res.filename || file.name
+        });
       } else {
         setError(res.message || 'Failed to extract questions.');
       }
@@ -46,13 +64,15 @@ export const QuizImport = () => {
     }
   };
 
-  if (extractedQuestions) {
+  if (extractedQuestions && importMeta) {
     return (
       <div className="space-y-6">
-        <Alert type="success" title="Document Parsed Successfully!">
-          Extracted {extractedQuestions.length} questions from {file?.name || 'document'}. You can now review, edit, assign marks, and configure quiz settings below before publishing.
-        </Alert>
-        <QuizBuilder initialQuestions={extractedQuestions} />
+        <QuizBuilder
+          initialQuestions={extractedQuestions}
+          importSessionId={importMeta.importSessionId}
+          docHash={importMeta.docHash}
+          docName={importMeta.filename}
+        />
       </div>
     );
   }
@@ -65,7 +85,7 @@ export const QuizImport = () => {
         </div>
         <h3 className="text-xl font-extrabold text-zinc-900">Upload Exam Question Paper</h3>
         <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-          Upload PDF, DOC, or DOCX files. Our parser automatically identifies questions, multiple choice options (A, B, C, D), and correct answers.
+          Upload PDF, DOC, or DOCX files. Our parser automatically identifies questions, multiple choice options (A, B, C, D), and correct answers into an isolated workspace.
         </p>
       </div>
 
@@ -112,3 +132,4 @@ export const QuizImport = () => {
     </Card>
   );
 };
+

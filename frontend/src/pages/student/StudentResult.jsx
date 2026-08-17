@@ -122,7 +122,7 @@ export const StudentResult = () => {
                       {q.is_correct ? `+${q.marks_awarded} Marks (Correct)` : `0 Marks (Incorrect)`}
                     </span>
                   </div>
-                  <h4 className="font-bold text-zinc-900 text-xs sm:text-sm mb-3">{q.question_text}</h4>
+                  <h4 className="font-bold text-zinc-900 text-xs sm:text-sm mb-3 whitespace-pre-wrap font-sans">{q.question_text}</h4>
 
                   <div className="space-y-2 text-xs font-medium">
                     {q.options.map((opt, optIdx) => {
@@ -135,10 +135,10 @@ export const StudentResult = () => {
                       else if (isCorrect) style = 'bg-zinc-100 border-zinc-900 font-semibold text-zinc-900';
 
                       return (
-                        <div key={opt.id || optIdx} className={`p-2.5 rounded-md border flex items-center justify-between ${style}`}>
-                          <span>{opt.text}</span>
-                          {isSelected && <span className="font-mono text-[9px] uppercase font-bold">Your Pick</span>}
-                          {!isSelected && isCorrect && <span className="font-mono text-[9px] uppercase font-bold text-zinc-900">Answer Key</span>}
+                        <div key={opt.id || optIdx} className={`p-2.5 rounded-md border flex items-center justify-between gap-3 ${style}`}>
+                          <span className="whitespace-pre-wrap font-mono">{opt.text}</span>
+                          {isSelected && <span className="font-mono text-[9px] uppercase font-bold shrink-0">Your Pick</span>}
+                          {!isSelected && isCorrect && <span className="font-mono text-[9px] uppercase font-bold text-zinc-900 shrink-0">Answer Key</span>}
                         </div>
                       );
                     })}

@@ -44,13 +44,19 @@ const formatToISO = (localStr) => {
   return d.toISOString();
 };
 
-export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
+export const QuizBuilder = ({
+  editId,
+  initialQuestions = [],
+  importSessionId = null,
+  docHash = null,
+  docName = null
+}) => {
   // Step 1: Questions Builder, Step 2: Settings & Access
   const [currentStep, setCurrentStep] = useState(1);
 
   const [quizData, setQuizData] = useState({
-    title: '',
-    description: '',
+    title: docName ? `Quiz from ${docName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')}` : '',
+    description: importSessionId ? `Parsed from document: ${docName || 'uploaded PDF'}` : '',
     instructions: '1. Answer all questions within the allowed time.\n2. Do not refresh browser during exam.\n3. Progressive answers are saved automatically.',
     duration_minutes: 30,
     start_time: '',
@@ -87,7 +93,7 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initial Load & Local Draft Recovery
+  // Initial Load & Local Draft Recovery with Document Session Isolation
   useEffect(() => {
     if (editId) {
       async function loadQuiz() {
@@ -131,8 +137,31 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
         }
       }
       loadQuiz();
+    } else if (importSessionId || (initialQuestions && initialQuestions.length > 0)) {
+      // Document Import session active: ISOLATE workspace and prevent generic draft contamination
+      if (docName) {
+        const cleanTitle = docName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        setQuizData(prev => ({
+          ...prev,
+          title: prev.title || `Quiz from ${cleanTitle}`
+        }));
+      }
+
+      // Check for session-specific local draft if user edited inside this specific import session
+      const sessionDraftKey = `quiz_builder_draft_${importSessionId || 'imported'}`;
+      const sessionDraft = localStorage.getItem(sessionDraftKey);
+      if (sessionDraft) {
+        try {
+          const parsed = JSON.parse(sessionDraft);
+          if (parsed.quizData) setQuizData(parsed.quizData);
+          if (parsed.questions) setQuestions(parsed.questions);
+        } catch (e) {}
+      } else {
+        setQuestions(initialQuestions);
+      }
+      setIsInitialized(true);
     } else {
-      // Check for unsaved new draft
+      // Check for unsaved new manual draft
       const newDraft = localStorage.getItem('quiz_builder_draft_new');
       if (newDraft) {
         try {
@@ -143,16 +172,19 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
       }
       setIsInitialized(true);
     }
-  }, [editId]);
+  }, [editId, importSessionId]);
 
-  // Debounced Auto-Save Mechanism (Layered DB + LocalStorage)
+  // Debounced Auto-Save Mechanism (Session-Isolated LocalStorage + DB Sync)
   useEffect(() => {
     if (!isInitialized) return;
     if (!quizData.title.trim()) return;
 
     setAutoSaveStatus('Saving...');
 
-    const draftKey = `quiz_builder_draft_${editId || 'new'}`;
+    const draftKey = editId
+      ? `quiz_builder_draft_${editId}`
+      : (importSessionId ? `quiz_builder_draft_${importSessionId}` : 'quiz_builder_draft_new');
+
     localStorage.setItem(draftKey, JSON.stringify({ quizData, questions }));
 
     const timer = setTimeout(async () => {
@@ -185,7 +217,7 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [quizData, questions, isInitialized, editId, savedQuiz?.id, savedQuiz?.status, savedQuiz?.is_published]);
+  }, [quizData, questions, isInitialized, editId, importSessionId, savedQuiz?.id, savedQuiz?.status, savedQuiz?.is_published]);
 
   // Question Management Controls
   const addQuestion = () => {
@@ -378,52 +410,54 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
   return (
     <div className="space-y-6">
       {/* Step Indicator Header (Replaces Tab Bar with Step Flow) */}
-      <div className="bg-white p-4 rounded-xl border border-zinc-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs ${
-            currentStep === 1 ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 border border-zinc-300'
-          }`}>
-            1
+      <div className="bg-white p-4 rounded-xl border border-zinc-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs ${
+              currentStep === 1 ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 border border-zinc-300'
+            }`}>
+              1
+            </div>
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 block">Step 1</span>
+              <span className={`text-xs sm:text-sm font-bold ${currentStep === 1 ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                Question Builder ({questions.length} Qs)
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 block">Step 1</span>
-            <span className={`text-sm font-bold ${currentStep === 1 ? 'text-zinc-900' : 'text-zinc-500'}`}>
-              Question Builder ({questions.length} Qs)
-            </span>
+
+          <div className="hidden sm:block text-zinc-300 font-bold text-lg">→</div>
+
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs ${
+              currentStep === 2 ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 border border-zinc-300'
+            }`}>
+              2
+            </div>
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 block">Step 2</span>
+              <span className={`text-xs sm:text-sm font-bold ${currentStep === 2 ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                Settings & Access
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="hidden sm:block text-zinc-300 font-bold text-lg">→</div>
-
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs ${
-            currentStep === 2 ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 border border-zinc-300'
-          }`}>
-            2
-          </div>
-          <div>
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 block">Step 2</span>
-            <span className={`text-sm font-bold ${currentStep === 2 ? 'text-zinc-900' : 'text-zinc-500'}`}>
-              Settings, Timing & Access
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 justify-end pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100">
           {/* Progressive Auto-Save Status Badge */}
-          <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700">
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700">
             <span className={`w-2 h-2 rounded-full ${autoSaveStatus === 'Saving...' ? 'bg-zinc-400 animate-ping' : 'bg-zinc-900'}`} />
             {autoSaveStatus}
           </span>
 
           {savedQuiz?.id && (
             <a href={`/dashboard/preview/${savedQuiz.id}`}>
-              <Button variant="outline" size="sm" icon={Eye}>
+              <Button variant="outline" size="sm" icon={Eye} className="text-xs">
                 Preview
               </Button>
             </a>
           )}
-          <Button variant="secondary" size="sm" icon={Save} isLoading={saving} onClick={() => handleSaveQuiz(false)}>
+          <Button variant="secondary" size="sm" icon={Save} isLoading={saving} onClick={() => handleSaveQuiz(false)} className="text-xs">
             Save Draft
           </Button>
         </div>
@@ -434,7 +468,7 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
       {/* STEP 1: QUESTION BUILDER */}
       {currentStep === 1 && (
         <div className="space-y-6 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-xs gap-3">
             <div>
               <h3 className="font-extrabold text-sm sm:text-base flex items-center gap-2">
                 <FileCheck className="w-5 h-5" /> Step 1: Create & Customize Questions
@@ -443,7 +477,7 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
                 {questions.length} Questions • Total Marks: <strong className="text-white">{totalMarksSum}</strong>
               </p>
             </div>
-            <Button variant="secondary" size="sm" icon={ArrowRight} onClick={handleProceedToSettings} className="bg-white text-zinc-900 font-bold hover:bg-zinc-100">
+            <Button variant="secondary" size="sm" icon={ArrowRight} onClick={handleProceedToSettings} className="bg-white text-zinc-900 font-bold hover:bg-zinc-100 w-full sm:w-auto text-xs shrink-0">
               Next: Settings & Access →
             </Button>
           </div>
@@ -489,8 +523,8 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
                 placeholder="Enter question statement..."
                 value={q.question_text}
                 onChange={(e) => updateQuestionText(qIndex, e.target.value)}
-                rows={2}
-                className="font-bold text-sm sm:text-base mb-4"
+                rows={q.question_text.includes('\n') ? Math.min(8, Math.max(3, q.question_text.split('\n').length)) : 2}
+                className="font-bold text-sm sm:text-base mb-4 whitespace-pre-wrap font-sans"
               />
 
               {/* MCQ Options */}
@@ -501,11 +535,12 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
                 {q.options.map((opt, optIndex) => {
                   const isCorrect = q.correct_answer === opt.id || q.correct_answer === opt.text;
                   const optionLabel = String.fromCharCode(65 + optIndex);
+                  const isMultiline = opt.text.includes('\n');
 
                   return (
                     <div
                       key={opt.id || optIndex}
-                      className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+                      className={`flex items-start sm:items-center gap-3 p-2.5 rounded-lg border transition-colors ${
                         isCorrect ? 'border-zinc-900 bg-zinc-100 font-bold' : 'border-zinc-200 bg-white'
                       }`}
                     >
@@ -514,27 +549,27 @@ export const QuizBuilder = ({ editId, initialQuestions = [] }) => {
                         name={`correct_answer_${qIndex}`}
                         checked={isCorrect}
                         onChange={() => setCorrectAnswer(qIndex, opt.id)}
-                        className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 cursor-pointer"
+                        className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 cursor-pointer mt-1 sm:mt-0 shrink-0"
                       />
 
-                      <span className={`text-xs font-mono font-bold w-6 h-6 rounded flex items-center justify-center ${
+                      <span className={`text-xs font-mono font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 ${
                         isCorrect ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'
                       }`}>
                         {optionLabel}
                       </span>
 
-                      <input
-                        type="text"
+                      <textarea
+                        rows={isMultiline ? Math.min(6, Math.max(2, opt.text.split('\n').length)) : 1}
                         placeholder={`Option ${optionLabel}...`}
                         value={opt.text}
                         onChange={(e) => updateOptionText(qIndex, optIndex, e.target.value)}
-                        className="flex-1 text-xs sm:text-sm font-medium border-0 bg-transparent focus:ring-0 px-2"
+                        className="flex-1 text-xs sm:text-sm font-medium border-0 bg-transparent focus:ring-0 px-2 resize-y whitespace-pre-wrap font-mono"
                       />
 
                       {q.options.length > 2 && (
                         <button
                           onClick={() => removeOption(qIndex, optIndex)}
-                          className="text-zinc-400 hover:text-zinc-900 p-1"
+                          className="text-zinc-400 hover:text-zinc-900 p-1 shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

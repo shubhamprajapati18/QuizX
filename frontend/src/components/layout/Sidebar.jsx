@@ -79,6 +79,19 @@ export const Sidebar = ({ activePath = '/dashboard', isMobileOpen = false, onClo
     </div>
   );
 
+  // Close mobile sidebar on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isMobileOpen && onCloseMobile) {
+        onCloseMobile();
+      }
+    };
+    if (isMobileOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onCloseMobile]);
+
   return (
     <>
       {/* Desktop Permanent Sidebar */}
@@ -88,9 +101,9 @@ export const Sidebar = ({ activePath = '/dashboard', isMobileOpen = false, onClo
 
       {/* Mobile Drawer / Sheet */}
       {isMobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs" onClick={onCloseMobile} />
-          <div className="relative w-64 max-w-full bg-white z-10 h-full shadow-2xl">
+        <div className="fixed inset-0 z-50 lg:hidden flex animate-fade-in">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={onCloseMobile} />
+          <div className="relative w-72 max-w-[85vw] bg-white z-10 h-full shadow-2xl">
             {sidebarContent}
           </div>
         </div>

@@ -28,30 +28,31 @@ export const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div
-        className={`w-full ${maxWidth} bg-white rounded-xl shadow-2xl border border-zinc-200 overflow-hidden transform transition-all duration-150 scale-100 max-h-[90vh] flex flex-col`}
+        className={`w-full ${maxWidth} bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden transform transition-all duration-150 scale-100 max-h-[92dvh] flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between p-5 pb-4 border-b border-zinc-100 shrink-0">
-          <div>
-            {title && <h3 className="text-lg font-bold text-zinc-900 tracking-tight">{title}</h3>}
-            {description && <p className="text-xs text-zinc-500 mt-0.5">{description}</p>}
+        <div className="flex items-start justify-between p-4 sm:p-5 pb-3 sm:pb-4 border-b border-zinc-100 shrink-0 gap-3">
+          <div className="min-w-0 flex-1">
+            {title && <h3 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight truncate">{title}</h3>}
+            {description && <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{description}</p>}
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 p-1.5 rounded-lg transition-colors"
+            className="text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 p-1.5 rounded-lg transition-colors shrink-0"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1">{children}</div>
 
         {/* Modal Footer */}
-        {footer && <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-end gap-3 shrink-0">{footer}</div>}
+        {footer && <div className="p-3 sm:p-4 bg-zinc-50 border-t border-zinc-100 flex flex-wrap items-center justify-end gap-2 sm:gap-3 shrink-0">{footer}</div>}
       </div>
     </div>
   );

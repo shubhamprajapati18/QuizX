@@ -250,26 +250,26 @@ export const StudentQuizTake = () => {
   const progressPercent = Math.round((answeredCount / questions.length) * 100);
 
   return (
-    <div className="h-screen overflow-hidden bg-zinc-50 flex flex-col font-sans select-none">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-zinc-50 flex flex-col font-sans select-none">
       {/* Sticky Exam Top Bar */}
-      <header className="sticky top-0 z-30 bg-zinc-900 text-white h-16 px-4 sm:px-6 flex items-center justify-between border-b border-zinc-800 shadow-xs">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-zinc-900 text-white h-14 sm:h-16 px-3 sm:px-6 flex items-center justify-between border-b border-zinc-800 shadow-xs gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={() => setShowMobileNav(true)}
-            className="lg:hidden p-1.5 rounded-lg bg-zinc-800 text-white border border-zinc-700"
+            className="lg:hidden p-1.5 rounded-lg bg-zinc-800 text-white border border-zinc-700 shrink-0"
             aria-label="Open Question Palette"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <Logo size="sm" light />
-          <span className="font-bold text-xs sm:text-sm truncate max-w-[160px] sm:max-w-md ml-2 border-l border-zinc-700 pl-3">
+          <Logo size="sm" light className="shrink-0" />
+          <span className="font-bold text-xs sm:text-sm truncate max-w-[110px] xs:max-w-[160px] sm:max-w-md border-l border-zinc-700 pl-2 sm:pl-3">
             {attemptData.quiz_title}
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {/* Subtle Auto-Save Status Indicator */}
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-full border border-zinc-700">
+          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-zinc-800 px-2.5 py-1 rounded-full border border-zinc-700">
             {!isOnline ? (
               <>
                 <WifiOff className="w-3.5 h-3.5 text-zinc-400" />
@@ -289,20 +289,20 @@ export const StudentQuizTake = () => {
           </div>
 
           {/* Countdown Timer */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono font-extrabold text-sm sm:text-base ${
+          <div className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border font-mono font-extrabold text-xs sm:text-base ${
             timeLeftSeconds && timeLeftSeconds < 300
               ? 'bg-zinc-800 text-white border-zinc-600 animate-pulse'
               : 'bg-zinc-800 text-white border-zinc-700'
           }`}>
-            <Clock className="w-4 h-4 text-zinc-400" />
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400 shrink-0" />
             <span>{formatTimer(timeLeftSeconds)}</span>
           </div>
 
           <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent bg-white text-zinc-900 font-semibold text-sm sm:text-base hover:bg-zinc-100 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-transparent bg-white text-zinc-900 font-bold text-xs sm:text-sm hover:bg-zinc-100 transition-colors shadow-xs shrink-0"
             onClick={() => setShowSubmitModal(true)}
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Submit Quiz</span>
             <span className="sm:hidden">Submit</span>
           </button>
@@ -310,28 +310,28 @@ export const StudentQuizTake = () => {
       </header>
 
       {/* Main Workspace Layout */}
-      <div className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
+      <div className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-y-auto lg:overflow-hidden">
         {/* Question Content View */}
-        <main className="lg:col-span-3 flex flex-col gap-4 overflow-hidden h-full">
+        <main className="lg:col-span-3 flex flex-col gap-4 lg:overflow-hidden h-full">
 
           {/* Active Question Box */}
-          <Card className="p-5 sm:p-6 border border-zinc-200 shadow-xs relative flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto pr-2 pb-4">
+          <Card className="p-4 sm:p-6 border border-zinc-200 shadow-xs relative flex flex-col flex-1 lg:overflow-hidden">
+            <div className="flex-1 lg:overflow-y-auto pr-1 sm:pr-2 pb-4">
               <div className="flex items-center justify-between mb-4 border-b border-zinc-100 pb-3">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 bg-zinc-100 px-3 py-1 rounded border border-zinc-300">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 bg-zinc-100 px-2.5 py-1 rounded border border-zinc-300">
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <Badge variant="draft" className="font-mono">
+              <Badge variant="draft" className="font-mono text-xs">
                 Marks: {currentQuestion.marks || 1}
               </Badge>
             </div>
 
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 mb-5 leading-relaxed">
+            <h2 className="text-sm sm:text-base font-bold text-zinc-900 mb-5 leading-relaxed whitespace-pre-wrap font-sans">
               {currentQuestion.question_text}
             </h2>
 
             {/* Option Choices */}
-            <div className="space-y-3 mb-8">
+            <div className="space-y-3 mb-6">
               {(currentQuestion.options || []).map((opt, optIdx) => {
                 const isSelected = answers[currentQuestion.id] === opt.id || answers[currentQuestion.id] === opt.text;
                 const optionLabel = String.fromCharCode(65 + optIdx);
@@ -340,24 +340,24 @@ export const StudentQuizTake = () => {
                   <button
                     key={opt.id || optIdx}
                     onClick={() => handleSelectOption(currentQuestion.id, opt.id || opt.text)}
-                    className={`w-full text-left py-2 px-3 sm:p-3 rounded-xl border transition-all duration-150 flex items-center justify-between group ${
+                    className={`w-full text-left py-2.5 px-3 sm:p-3.5 rounded-xl border transition-all duration-150 flex items-start sm:items-center justify-between group ${
                       isSelected
                         ? 'border-zinc-900 bg-zinc-900 text-white font-bold shadow-xs'
                         : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center border shrink-0 ${
+                    <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                      <span className={`w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center border shrink-0 mt-0.5 sm:mt-0 ${
                         isSelected
                           ? 'bg-white text-zinc-900 border-white'
                           : 'bg-zinc-100 text-zinc-700 border-zinc-200 group-hover:border-zinc-300'
                       }`}>
                         {optionLabel}
                       </span>
-                      <span className="text-xs sm:text-sm">{opt.text}</span>
+                      <span className="text-xs sm:text-sm whitespace-pre-wrap font-mono break-words">{opt.text}</span>
                     </div>
 
-                    {isSelected && <CheckCircle2 className="w-5 h-5 text-white shrink-0 ml-2" />}
+                    {isSelected && <CheckCircle2 className="w-5 h-5 text-white shrink-0 ml-2 mt-0.5 sm:mt-0" />}
                   </button>
                 );
               })}
@@ -366,12 +366,13 @@ export const StudentQuizTake = () => {
             </div>
 
             {/* Question Action Navigation Buttons */}
-            <div className="pt-4 mt-auto shrink-0 border-t border-zinc-100 flex items-center justify-between">
+            <div className="pt-4 mt-auto shrink-0 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
               <Button
                 variant="outline"
                 disabled={currentIndex === 0}
                 onClick={() => handleNavigateQuestion(currentIndex - 1)}
                 icon={ArrowLeft}
+                className="text-xs sm:text-sm"
               >
                 Previous
               </Button>
@@ -379,17 +380,18 @@ export const StudentQuizTake = () => {
               {isLastQuestion ? (
                 <Button
                   variant="primary"
-                  className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold"
+                  className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold text-xs sm:text-sm"
                   onClick={() => setShowSubmitModal(true)}
                   icon={Send}
                 >
-                  Finish & Submit Exam
+                  Finish & Submit
                 </Button>
               ) : (
                 <Button
                   variant="primary"
                   onClick={() => handleNavigateQuestion(currentIndex + 1)}
                   icon={ArrowRight}
+                  className="text-xs sm:text-sm"
                 >
                   Next Question
                 </Button>
