@@ -92,32 +92,40 @@ export const QuizAnalytics = () => {
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <Card className="p-4 border-zinc-200">
               <span className="text-[10px] font-mono font-bold uppercase text-zinc-500">Participants</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">{analytics.total_participants}</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">
+                {analytics.total_participants ?? analytics.summary?.total_attempts ?? 0}
+              </div>
             </Card>
             <Card className="p-4 border-zinc-200">
               <span className="text-[10px] font-mono font-bold uppercase text-zinc-500">Completed</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">{analytics.completed_attempts}</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">
+                {analytics.completed_attempts ?? analytics.summary?.total_attempts ?? 0}
+              </div>
             </Card>
             <Card className="p-4 border-zinc-200">
               <span className="text-[10px] font-mono font-bold uppercase text-zinc-500">Average Score</span>
               <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">
-                {analytics.average_score} / {analytics.total_marks}
+                {analytics.average_score ?? analytics.summary?.average_score ?? 0} / {analytics.total_marks ?? analytics.quiz?.total_marks ?? 0}
               </div>
             </Card>
             <Card className="p-4 border-zinc-200">
               <span className="text-[10px] font-mono font-bold uppercase text-zinc-500">Highest Score</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">{analytics.highest_score}</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">
+                {analytics.highest_score ?? analytics.summary?.highest_score ?? 0}
+              </div>
             </Card>
             <Card className="p-4 border-zinc-200 col-span-2 sm:col-span-1">
               <span className="text-[10px] font-mono font-bold uppercase text-zinc-500">Pass Rate</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">{analytics.pass_percentage}%</div>
+              <div className="text-xl sm:text-2xl font-extrabold text-zinc-900 font-mono mt-1">
+                {analytics.pass_percentage ?? analytics.summary?.passing_rate ?? 0}%
+              </div>
             </Card>
           </div>
 
           {/* Pass Rate Progress Bar */}
           <Card className="p-5 sm:p-6 border-zinc-200">
             <h3 className="text-sm sm:text-base font-bold text-zinc-900 mb-2">Overall Class Pass Rate</h3>
-            <Progress value={analytics.pass_percentage} max={100} label="Students Scoring ≥ 50%" />
+            <Progress value={analytics.pass_percentage ?? analytics.summary?.passing_rate ?? 0} max={100} label="Students Scoring ≥ 50%" />
           </Card>
 
           {/* Question-Wise Item Difficulty & Accuracy Analysis */}
@@ -126,8 +134,9 @@ export const QuizAnalytics = () => {
             <p className="text-xs text-zinc-500 mb-6">Identifies hard topics where students missed questions</p>
 
             <div className="space-y-4 sm:space-y-6">
-              {analytics.questions.map((q, idx) => {
-                const isHard = q.accuracy_rate < 50;
+              {(analytics.questions || analytics.question_stats || []).map((q, idx) => {
+                const acc = q.accuracy_rate ?? q.accuracy ?? 0;
+                const isHard = acc < 50;
                 return (
                   <div key={q.id || idx} className="p-4 sm:p-5 rounded-lg border border-zinc-200 bg-zinc-50/50 space-y-3">
                     <div className="flex items-start justify-between gap-4">
@@ -138,7 +147,7 @@ export const QuizAnalytics = () => {
                           </span>
                           {isHard && (
                             <Badge variant="danger" size="sm" className="flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3 text-zinc-900" /> High Difficulty ({100 - q.accuracy_rate}% Missed)
+                              <AlertTriangle className="w-3 h-3 text-zinc-900" /> High Difficulty ({100 - acc}% Missed)
                             </Badge>
                           )}
                         </div>
@@ -146,25 +155,27 @@ export const QuizAnalytics = () => {
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="text-lg sm:text-xl font-extrabold font-mono text-zinc-900">{q.accuracy_rate}%</span>
+                        <span className="text-lg sm:text-xl font-extrabold font-mono text-zinc-900">{acc}%</span>
                         <span className="block text-[9px] font-mono font-bold text-zinc-500 uppercase">Accuracy</span>
                       </div>
                     </div>
 
-                    <Progress value={q.accuracy_rate} max={100} />
+                    <Progress value={acc} max={100} />
 
                     {/* Option Selection Distribution */}
-                    <div className="pt-2">
-                      <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block mb-2">Option Choice Count:</span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                        {Object.entries(q.option_distribution || {}).map(([optText, count], i) => (
-                          <div key={i} className="p-2 rounded bg-white border border-zinc-200 flex justify-between items-center">
-                            <span className="truncate max-w-[110px] font-medium text-xs">{optText}</span>
-                            <span className="font-mono font-bold text-zinc-900">{count}</span>
-                          </div>
-                        ))}
+                    {q.option_distribution && Object.keys(q.option_distribution).length > 0 && (
+                      <div className="pt-2">
+                        <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block mb-2">Option Choice Count:</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                          {Object.entries(q.option_distribution).map(([optText, count], i) => (
+                            <div key={i} className="p-2 rounded bg-white border border-zinc-200 flex justify-between items-center">
+                              <span className="truncate max-w-[110px] font-medium text-xs">{optText}</span>
+                              <span className="font-mono font-bold text-zinc-900">{count}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}

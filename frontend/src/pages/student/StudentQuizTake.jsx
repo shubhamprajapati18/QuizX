@@ -81,7 +81,24 @@ export const StudentQuizTake = () => {
 
           setAttemptData(res.attempt);
           setQuestions(res.questions || []);
-          setTimeLeftSeconds(res.attempt.remainingSeconds);
+
+          let secLeft = res.attempt?.remainingSeconds;
+          if (secLeft === undefined || secLeft === null || isNaN(Number(secLeft))) {
+            if (res.attempt?.deadline) {
+              const deadlineMs = new Date(res.attempt.deadline).getTime();
+              if (!isNaN(deadlineMs)) {
+                secLeft = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
+              }
+            }
+            if ((secLeft === undefined || secLeft === null || isNaN(Number(secLeft))) && res.attempt?.start_time) {
+              const startMs = new Date(res.attempt.start_time).getTime();
+              const durationMs = (Number(res.attempt.duration_minutes) || 30) * 60 * 1000;
+              if (!isNaN(startMs)) {
+                secLeft = Math.max(0, Math.floor((startMs + durationMs - Date.now()) / 1000));
+              }
+            }
+          }
+          setTimeLeftSeconds(isNaN(Number(secLeft)) || secLeft === null || secLeft === undefined ? 0 : Number(secLeft));
 
           // Restore saved answers from server
           const restoredAnswers = { ...(res.savedAnswers || {}) };
@@ -234,9 +251,11 @@ export const StudentQuizTake = () => {
   };
 
   const formatTimer = (totalSeconds) => {
-    if (totalSeconds === null || totalSeconds === undefined) return '--:--';
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+    const num = Number(totalSeconds);
+    if (totalSeconds === null || totalSeconds === undefined || isNaN(num)) return '--:--';
+    const totalSecs = Math.max(0, Math.floor(num));
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 

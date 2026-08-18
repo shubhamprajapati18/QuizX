@@ -6,7 +6,7 @@ export const FacultyLayout = ({ children, title = 'Faculty Dashboard', activePat
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col lg:flex-row font-sans">
+    <div className="min-h-screen bg-zinc-50 font-sans">
       {/* Persistent Sidebar */}
       <Sidebar
         activePath={activePath}
@@ -15,7 +15,7 @@ export const FacultyLayout = ({ children, title = 'Faculty Dashboard', activePat
       />
 
       {/* Main Content Workspace */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="lg:pl-60 flex-1 flex flex-col min-w-0 min-h-screen">
         <FacultyHeader
           title={title}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}

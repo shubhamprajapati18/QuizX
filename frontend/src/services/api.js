@@ -788,8 +788,11 @@ export const api = {
         }));
       }
 
-      const allowedDurationMs = (quiz.duration_minutes || 30) * 60 * 1000;
-      const deadline = new Date(new Date(startTime).getTime() + allowedDurationMs).toISOString();
+      const durationMinutes = Number(quiz.duration_minutes) || 30;
+      const startTimeMs = new Date(startTime).getTime();
+      const allowedDurationMs = durationMinutes * 60 * 1000;
+      const deadline = new Date(startTimeMs + allowedDurationMs).toISOString();
+      const remainingSeconds = Math.max(0, Math.floor((startTimeMs + allowedDurationMs - Date.now()) / 1000));
 
       return {
         success: true,
@@ -798,7 +801,8 @@ export const api = {
           quiz_id: quiz.id,
           quiz_title: quiz.title,
           instructions: quiz.instructions,
-          duration_minutes: quiz.duration_minutes,
+          duration_minutes: durationMinutes,
+          remainingSeconds,
           start_time: startTime,
           deadline,
           show_score_immediately: quiz.show_score_immediately,
@@ -818,9 +822,11 @@ export const api = {
       if (attErr || !attempt) throw new Error('Attempt not found.');
 
       const quiz = attempt.quizzes;
-      const startTimeMs = new Date(attempt.start_time).getTime();
-      const allowedDurationMs = (quiz.duration_minutes || 30) * 60 * 1000;
+      const durationMinutes = Number(quiz?.duration_minutes) || 30;
+      const startTimeMs = attempt.start_time ? new Date(attempt.start_time).getTime() : Date.now();
+      const allowedDurationMs = durationMinutes * 60 * 1000;
       const deadline = new Date(startTimeMs + allowedDurationMs).toISOString();
+      const remainingSeconds = Math.max(0, Math.floor((startTimeMs + allowedDurationMs - Date.now()) / 1000));
 
       let { data: questions } = await supabase
         .from('questions')
@@ -845,7 +851,8 @@ export const api = {
           quiz_id: quiz.id,
           quiz_title: quiz.title,
           instructions: quiz.instructions,
-          duration_minutes: quiz.duration_minutes,
+          duration_minutes: durationMinutes,
+          remainingSeconds,
           start_time: attempt.start_time,
           deadline,
           status: attempt.status,
@@ -1003,6 +1010,9 @@ export const api = {
       const answerMap = new Map();
       (answers || []).forEach(a => answerMap.set(a.question_id, a));
 
+      const showScoreImmediately = quiz.show_score_immediately !== false;
+      const showCorrectAnswers = quiz.show_correct_answers !== false;
+
       const breakdown = (questions || []).map(q => {
         const a = answerMap.get(q.id);
         const item = {
@@ -1015,7 +1025,7 @@ export const api = {
           is_correct: a ? a.is_correct : false
         };
 
-        if (quiz.show_correct_answers) {
+        if (showCorrectAnswers) {
           item.correct_answer = q.correct_answer;
           item.explanation = q.explanation;
         }
@@ -1023,26 +1033,35 @@ export const api = {
         return item;
       });
 
+      const resultPayload = {
+        attemptId: attempt.id,
+        quiz_id: quiz.id,
+        quiz_title: quiz.title,
+        quiz_description: quiz.description,
+        participant_name: attempt.participant_name,
+        roll_number: attempt.roll_number,
+        department: attempt.department,
+        start_time: attempt.start_time,
+        end_time: attempt.end_time,
+        status: attempt.status,
+        total_score: attempt.total_score,
+        max_score: attempt.max_score,
+        percentage: attempt.percentage,
+        questions: breakdown
+      };
+
       return {
         success: true,
-        attempt: {
-          id: attempt.id,
-          participant_name: attempt.participant_name,
-          roll_number: attempt.roll_number,
-          department: attempt.department,
-          start_time: attempt.start_time,
-          end_time: attempt.end_time,
-          status: attempt.status,
-          total_score: attempt.total_score,
-          max_score: attempt.max_score,
-          percentage: attempt.percentage
-        },
+        show_score_immediately: showScoreImmediately,
+        show_correct_answers: showCorrectAnswers,
+        result: resultPayload,
+        attempt: resultPayload,
         quiz: {
           id: quiz.id,
           title: quiz.title,
           description: quiz.description,
-          show_score_immediately: quiz.show_score_immediately,
-          show_correct_answers: quiz.show_correct_answers
+          show_score_immediately: showScoreImmediately,
+          show_correct_answers: showCorrectAnswers
         },
         breakdown
       };
@@ -1209,14 +1228,17 @@ export const api = {
 
       const totalAttempts = (attempts || []).length;
       let totalScore = 0;
-      let highestScore = 0;
+      let highestScorePct = 0;
+      let highestScoreVal = 0;
       let lowestScore = totalAttempts > 0 ? 100 : 0;
       let scoreDistribution = { '0-20%': 0, '21-40%': 0, '41-60%': 0, '61-80%': 0, '81-100%': 0 };
 
       (attempts || []).forEach(a => {
         const pct = Number(a.percentage || 0);
+        const score = Number(a.total_score || 0);
         totalScore += pct;
-        if (pct > highestScore) highestScore = pct;
+        if (pct > highestScorePct) highestScorePct = pct;
+        if (score > highestScoreVal) highestScoreVal = score;
         if (pct < lowestScore) lowestScore = pct;
 
         if (pct <= 20) scoreDistribution['0-20%']++;
@@ -1227,39 +1249,70 @@ export const api = {
       });
 
       const averageScore = totalAttempts > 0 ? Math.round((totalScore / totalAttempts) * 10) / 10 : 0;
+      const passAttempts = (attempts || []).filter(a => Number(a.percentage || 0) >= 50).length;
+      const passPercentage = totalAttempts > 0 ? Math.round((passAttempts / totalAttempts) * 100) : 0;
+      const totalMarksVal = quiz.total_marks || (questions || []).reduce((sum, q) => sum + (q.marks || 1), 0);
 
       // Question-level stats
       const questionStats = (questions || []).map(q => {
         const qAnswers = answers.filter(a => a.question_id === q.id);
         const correctCount = qAnswers.filter(a => a.is_correct).length;
         const totalAnswered = qAnswers.length;
-        const accuracy = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+        const accuracyRate = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+
+        const optionDist = {};
+        let optionsList = [];
+        if (Array.isArray(q.options)) {
+          optionsList = q.options.map(opt => typeof opt === 'string' ? opt : (opt?.text || opt?.label || String(opt)));
+        } else if (typeof q.options === 'object' && q.options !== null) {
+          optionsList = Object.values(q.options).map(v => String(v));
+        }
+
+        optionsList.forEach(opt => {
+          optionDist[opt] = 0;
+        });
+
+        qAnswers.forEach(ans => {
+          if (ans.selected_option !== null && ans.selected_option !== undefined) {
+            const selected = String(ans.selected_option);
+            optionDist[selected] = (optionDist[selected] || 0) + 1;
+          }
+        });
 
         return {
           id: q.id,
           question_text: q.question_text,
-          accuracy,
+          accuracy: accuracyRate,
+          accuracy_rate: accuracyRate,
           correct_count: correctCount,
           total_answered: totalAnswered,
-          difficulty: accuracy >= 70 ? 'Easy' : accuracy >= 40 ? 'Medium' : 'Hard'
+          difficulty: accuracyRate >= 70 ? 'Easy' : accuracyRate >= 40 ? 'Medium' : 'Hard',
+          option_distribution: optionDist
         };
       });
 
       return {
         success: true,
         analytics: {
+          total_participants: totalAttempts,
+          completed_attempts: totalAttempts,
+          average_score: averageScore,
+          total_marks: totalMarksVal,
+          highest_score: highestScoreVal || highestScorePct,
+          pass_percentage: passPercentage,
+          questions: questionStats,
           quiz: {
             id: quiz.id,
             title: quiz.title,
             quiz_code: quiz.quiz_code,
-            total_marks: quiz.total_marks
+            total_marks: totalMarksVal
           },
           summary: {
             total_attempts: totalAttempts,
             average_score: averageScore,
-            highest_score: highestScore,
+            highest_score: highestScorePct,
             lowest_score: lowestScore,
-            passing_rate: totalAttempts > 0 ? Math.round(((attempts.filter(a => Number(a.percentage || 0) >= 40).length) / totalAttempts) * 100) : 0
+            passing_rate: passPercentage
           },
           score_distribution: scoreDistribution,
           question_stats: questionStats

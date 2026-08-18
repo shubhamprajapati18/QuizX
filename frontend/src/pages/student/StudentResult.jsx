@@ -21,7 +21,9 @@ export const StudentResult = () => {
         const res = await api.attempts.getResult(attemptId);
         if (res.success) {
           setData(res);
-          if (res.show_score_immediately && res.result && Number(res.result.percentage || 0) >= 50) {
+          const showScore = res.show_score_immediately ?? res.quiz?.show_score_immediately ?? true;
+          const scorePct = Number(res.result?.percentage ?? res.attempt?.percentage ?? 0);
+          if (showScore && scorePct >= 50) {
             confetti({
               particleCount: 80,
               spread: 60,
@@ -46,8 +48,13 @@ export const StudentResult = () => {
     );
   }
 
+  const showScoreImmediately = data?.show_score_immediately ?? data?.quiz?.show_score_immediately ?? true;
+  const showCorrectAnswers = data?.show_correct_answers ?? data?.quiz?.show_correct_answers ?? true;
+  const result = data?.result || data?.attempt;
+  const questionsList = result?.questions || data?.breakdown || [];
+
   // If score is hidden by faculty
-  if (data && !data.show_score_immediately) {
+  if (data && !showScoreImmediately) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
         <Card className="p-8 text-center max-w-md w-full shadow-xs border-zinc-200">
@@ -66,7 +73,6 @@ export const StudentResult = () => {
     );
   }
 
-  const result = data?.result;
   const isPass = Number(result?.percentage || 0) >= 50;
 
   return (
@@ -86,15 +92,15 @@ export const StudentResult = () => {
           <div className="w-14 h-14 rounded-full bg-zinc-900 text-white flex items-center justify-center mx-auto mb-4 font-bold">
             <Award className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">{result?.quiz_title}</h1>
-          <p className="text-xs text-zinc-500 mt-1 font-mono">Participant: <strong className="text-zinc-900">{result?.participant_name}</strong> ({result?.roll_number || 'N/A'})</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">{result?.quiz_title || data?.quiz?.title || 'Quiz Performance'}</h1>
+          <p className="text-xs text-zinc-500 mt-1 font-mono">Participant: <strong className="text-zinc-900">{result?.participant_name || 'Student'}</strong> ({result?.roll_number || 'N/A'})</p>
 
           <div className="my-6 p-6 rounded-xl bg-zinc-900 text-white inline-block w-full max-w-sm shadow-xs">
             <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-zinc-400 block mb-1">Total Score</span>
             <div className="text-4xl sm:text-5xl font-mono font-extrabold text-white my-1">
-              {result?.total_score} <span className="text-zinc-500 text-2xl">/ {result?.max_score}</span>
+              {result?.total_score ?? 0} <span className="text-zinc-500 text-2xl">/ {result?.max_score ?? 0}</span>
             </div>
-            <div className="text-xs font-mono font-bold text-zinc-300 mt-2">{result?.percentage}% Percentage Score</div>
+            <div className="text-xs font-mono font-bold text-zinc-300 mt-2">{result?.percentage ?? 0}% Percentage Score</div>
           </div>
 
           <div className="flex justify-center gap-4">
@@ -105,11 +111,11 @@ export const StudentResult = () => {
         </Card>
 
         {/* Detailed Question Review (If Enabled by Faculty) */}
-        {data?.show_correct_answers && result?.questions && (
+        {showCorrectAnswers && questionsList.length > 0 && (
           <Card className="p-6 sm:p-8 border-zinc-200">
             <h3 className="text-base font-extrabold text-zinc-900 mb-4">Detailed Answer Key Review</h3>
             <div className="space-y-4">
-              {result.questions.map((q, idx) => (
+              {questionsList.map((q, idx) => (
                 <div
                   key={q.id || idx}
                   className={`p-4 rounded-lg border ${
@@ -119,15 +125,17 @@ export const StudentResult = () => {
                   <div className="flex items-center justify-between text-xs font-mono font-bold mb-2">
                     <span className="text-zinc-600">Question #{idx + 1}</span>
                     <span className={q.is_correct ? 'text-zinc-900 font-extrabold' : 'text-zinc-600'}>
-                      {q.is_correct ? `+${q.marks_awarded} Marks (Correct)` : `0 Marks (Incorrect)`}
+                      {q.is_correct ? `+${q.marks_awarded || q.marks || 1} Marks (Correct)` : `0 Marks (Incorrect)`}
                     </span>
                   </div>
                   <h4 className="font-bold text-zinc-900 text-xs sm:text-sm mb-3 whitespace-pre-wrap font-sans">{q.question_text}</h4>
 
                   <div className="space-y-2 text-xs font-medium">
-                    {q.options.map((opt, optIdx) => {
-                      const isSelected = q.selected_option === opt.id || q.selected_option === opt.text;
-                      const isCorrect = q.correct_answer === opt.id || q.correct_answer === opt.text;
+                    {Array.isArray(q.options) && q.options.map((opt, optIdx) => {
+                      const optText = typeof opt === 'string' ? opt : (opt.text || opt.label || String(opt));
+                      const optId = typeof opt === 'object' && opt?.id ? opt.id : optText;
+                      const isSelected = q.selected_option === optId || q.selected_option === optText;
+                      const isCorrect = q.correct_answer === optId || q.correct_answer === optText;
 
                       let style = 'bg-white border-zinc-200 text-zinc-700';
                       if (isSelected && isCorrect) style = 'bg-zinc-900 border-zinc-900 font-bold text-white';
@@ -135,8 +143,8 @@ export const StudentResult = () => {
                       else if (isCorrect) style = 'bg-zinc-100 border-zinc-900 font-semibold text-zinc-900';
 
                       return (
-                        <div key={opt.id || optIdx} className={`p-2.5 rounded-md border flex items-center justify-between gap-3 ${style}`}>
-                          <span className="whitespace-pre-wrap font-mono">{opt.text}</span>
+                        <div key={optId || optIdx} className={`p-2.5 rounded-md border flex items-center justify-between gap-3 ${style}`}>
+                          <span className="whitespace-pre-wrap font-mono">{optText}</span>
                           {isSelected && <span className="font-mono text-[9px] uppercase font-bold shrink-0">Your Pick</span>}
                           {!isSelected && isCorrect && <span className="font-mono text-[9px] uppercase font-bold text-zinc-900 shrink-0">Answer Key</span>}
                         </div>

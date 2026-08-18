@@ -601,7 +601,7 @@ export const QuizBuilder = ({
             <Button variant="outline" icon={Plus} onClick={addQuestion} className="w-full sm:w-auto py-3">
               Add Question
             </Button>
-            <Button variant="primary" icon={ArrowRight} onClick={handleProceedToSettings} className="w-full sm:w-auto py-3 font-bold">
+            <Button variant="primary" onClick={handleProceedToSettings} className="w-full sm:w-auto py-3 font-bold">
               Proceed to Step 2: Settings & Access →
             </Button>
           </div>
@@ -820,13 +820,13 @@ export const QuizBuilder = ({
           </div>
 
           {/* Bottom Action Footer for Step 2 */}
-          <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Button variant="outline" icon={ArrowLeft} onClick={() => setCurrentStep(1)}>
+          <div className="pt-6 border-t border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+            <Button variant="outline" icon={ArrowLeft} onClick={() => setCurrentStep(1)} className="w-full sm:w-auto py-3">
               Back to Question Builder
             </Button>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Button variant="secondary" icon={Save} isLoading={saving} onClick={() => handleSaveQuiz(false)}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+              <Button variant="secondary" icon={Save} isLoading={saving} onClick={() => handleSaveQuiz(false)} className="w-full sm:w-auto py-3">
                 Save as Draft
               </Button>
               <Button

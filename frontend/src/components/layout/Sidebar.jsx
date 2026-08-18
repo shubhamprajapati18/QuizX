@@ -95,7 +95,7 @@ export const Sidebar = ({ activePath = '/dashboard', isMobileOpen = false, onClo
   return (
     <>
       {/* Desktop Permanent Sidebar */}
-      <aside className="hidden lg:block w-60 shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:block w-60 fixed top-0 left-0 bottom-0 z-30 h-screen bg-white">
         {sidebarContent}
       </aside>
 
