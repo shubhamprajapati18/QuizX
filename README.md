@@ -1,5 +1,7 @@
 # QuizX — Multi-Faculty Online Quiz & Exam Assessment Platform
 
+*Live Project* [QuizX](https://quizxbit.netlify.app/)
+
 **QuizX** is an enterprise-grade, multi-faculty online quiz and assessment platform engineered with **React.js (Vite)**, **Tailwind CSS**, **Supabase (PostgreSQL)**, and **Node.js/Express**.
 
 It provides an end-to-end ecosystem for educators, universities, trainers, and academic departments to create, manage, distribute, evaluate, and analyze online multiple-choice examinations seamlessly.
