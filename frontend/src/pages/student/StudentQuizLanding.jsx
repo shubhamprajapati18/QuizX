@@ -7,7 +7,7 @@ import { Alert } from '../../components/ui/Alert';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Logo } from '../../components/ui/Logo';
 import { api } from '../../services/api';
-import { KeyRound, ArrowRight } from 'lucide-react';
+import { KeyRound, ArrowRight, Lock, Home } from 'lucide-react';
 
 export const StudentQuizLanding = () => {
   const pathParts = window.location.pathname.split('/');
@@ -110,6 +110,118 @@ export const StudentQuizLanding = () => {
             <Button variant="outline">Return Home</Button>
           </a>
         </Card>
+      </div>
+    );
+  }
+
+  const now = Date.now();
+  const isEnded = quiz?.end_time && new Date(quiz.end_time).getTime() < now;
+  const isNotStartedYet = quiz?.start_time && (new Date(quiz.start_time).getTime() - now > 120000);
+  const isStatusClosed = quiz?.status === 'closed' || quiz?.status === 'archived' || quiz?.status === 'draft' || !quiz?.is_published;
+
+  const isClosed = isStatusClosed || isEnded;
+  const isNotAccepting = isClosed || isNotStartedYet;
+
+  if (quiz && isNotAccepting) {
+    const statusMessage = isNotStartedYet
+      ? `This quiz has not started yet. It is scheduled to open at ${new Date(quiz.start_time).toLocaleString()}.`
+      : 'This quiz has been closed or is not accepting responses at this time.';
+
+    return (
+      <div className="min-h-screen bg-zinc-50 flex flex-col font-sans">
+        {/* Distraction-Free Header */}
+        <header className="h-16 border-b border-zinc-200 bg-white px-4 sm:px-6 flex items-center justify-between">
+          <a href="/" className="flex items-center">
+            <Logo size="md" />
+          </a>
+          <Badge variant="draft" className="font-mono flex items-center gap-1">
+            <Lock className="w-3 h-3" /> {isNotStartedYet ? 'SCHEDULED' : 'QUIZ CLOSED'}
+          </Badge>
+        </header>
+
+        {/* Closed Quiz Details View */}
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 my-4 sm:my-8">
+          <div className="w-full max-w-xl space-y-6">
+            <Card className="p-6 sm:p-8 shadow-xs border-zinc-200">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 rounded-full bg-zinc-100 border border-zinc-300 flex items-center justify-center mx-auto mb-3 text-zinc-700">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <Badge variant="draft" className="mb-2 font-mono">CODE: {quiz.quiz_code}</Badge>
+                <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">{quiz.title}</h1>
+                <p className="text-xs text-zinc-500 mt-1 font-mono">
+                  Educator: <strong className="text-zinc-900">{quiz.creator_name}</strong> • {quiz.institution}
+                </p>
+              </div>
+
+              {/* Status Alert */}
+              <Alert type="warning" className="mb-6 flex items-start gap-2">
+                <div>
+                  <strong className="block font-bold text-xs uppercase tracking-wider mb-0.5">
+                    {isNotStartedYet ? 'Quiz Not Started' : 'Quiz Closed'}
+                  </strong>
+                  <span>{statusMessage}</span>
+                </div>
+              </Alert>
+
+              {/* Quiz Meta Matrix */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 p-4 rounded-lg bg-zinc-50 border border-zinc-200 text-center mb-6 font-mono">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Questions</span>
+                  <span className="text-base sm:text-lg font-extrabold text-zinc-900">{quiz.question_count}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Duration</span>
+                  <span className="text-base sm:text-lg font-extrabold text-zinc-900">{quiz.duration_minutes}m</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Total Marks</span>
+                  <span className="text-base sm:text-lg font-extrabold text-zinc-900">{quiz.total_marks}</span>
+                </div>
+              </div>
+
+              {/* Timing Information */}
+              {(quiz.start_time || quiz.end_time) && (
+                <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 mb-6 text-xs text-zinc-600 font-mono space-y-1">
+                  {quiz.start_time && (
+                    <div className="flex justify-between">
+                      <span className="font-bold text-zinc-700">Start Time:</span>
+                      <span>{new Date(quiz.start_time).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {quiz.end_time && (
+                    <div className="flex justify-between">
+                      <span className="font-bold text-zinc-700">End Time:</span>
+                      <span>{new Date(quiz.end_time).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {quiz.description && (
+                <div className="p-4 rounded-lg bg-zinc-100 border border-zinc-300 mb-6 text-xs text-zinc-800 leading-relaxed font-mono">
+                  <strong className="block mb-1 text-zinc-900 font-bold uppercase">Quiz Description:</strong>
+                  <p className="whitespace-pre-line">{quiz.description}</p>
+                </div>
+              )}
+
+              {quiz.instructions && (
+                <div className="p-4 rounded-lg bg-zinc-100 border border-zinc-300 mb-6 text-xs text-zinc-800 leading-relaxed font-mono">
+                  <strong className="block mb-1 text-zinc-900 font-bold uppercase">Exam Instructions:</strong>
+                  <p className="whitespace-pre-line">{quiz.instructions}</p>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <a href="/">
+                  <Button variant="outline" className="w-full py-3 text-sm font-bold" icon={Home}>
+                    Return to Homepage
+                  </Button>
+                </a>
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -259,3 +371,4 @@ export const StudentQuizLanding = () => {
     </div>
   );
 };
+
